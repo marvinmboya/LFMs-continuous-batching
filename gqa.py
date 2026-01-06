@@ -13,8 +13,9 @@ class GQAttention(nn.Module):
         d_out = config.heads * config.head_dim
         kv_d_out = config.nkv_groups * config.head_dim
 
-        self.q_norm = RMSNorm(config.head_dim)
-        self.k_norm = RMSNorm(config.head_dim)
+
+        self.q_norm = RMSNorm(config.head_dim, dtype=config.dtype)
+        self.k_norm = RMSNorm(config.head_dim, dtype=config.dtype)
 
         lin = partial(nn.Linear, bias=False, dtype=config.dtype)
         self.Wq = lin(config.d_model, d_out)
@@ -47,7 +48,7 @@ class GQAttention(nn.Module):
             k.repeat_interleave(self.group_size, dim=1),
             v.repeat_interleave(self.group_size, dim=1)
         )
-        out = SDPA(q, k, v, mask)
+        out = SDPA(q, k, v, mask, dtype=dtype)
         out = out.transpose(1, 2)
         out = out.contiguous().view(*out.shape[:2], -1)
         out = self.Wo(out)
