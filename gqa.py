@@ -23,11 +23,10 @@ class GQAttention(nn.Module):
         self.Wo = lin(d_out, d_model)
 
         self.heads = heads
-        self.head_dim = head_dim
         self.nkv_groups = nkv_groups
         self.group_size = heads // nkv_groups
 
-    def forward(self, x, sin, cos, mask=None):
+    def forward(self, x, cos, sin, mask=None):
         dtype = x.dtype
         q, k, v = (
             self.Wq(x),
