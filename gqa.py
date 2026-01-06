@@ -1,5 +1,6 @@
 import torch 
 import torch.nn as nn
+from functools import partial 
 
 from lfm_norm import RMSNorm
 from lfm_rope import apply_rope
@@ -15,10 +16,11 @@ class GQAttention(nn.Module):
         self.q_norm = RMSNorm(head_dim)
         self.k_norm = RMSNorm(head_dim)
 
-        self.Wq = nn.Linear(d_model, d_out, bias=False)
-        self.Wk = nn.Linear(d_model, kv_d_out, bias=False)
-        self.Wv = nn.Linear(d_model, kv_d_out, bias=False) 
-        self.Wo = nn.Linear(d_out, d_model)
+        lin = partial(nn.Linear, bias=False, dtype=dtype)
+        self.Wq = lin(d_model, d_out)
+        self.Wk = lin(d_model, kv_d_out)
+        self.Wv = lin(d_model, kv_d_out) 
+        self.Wo = lin(d_out, d_model)
 
         self.heads = heads
         self.head_dim = head_dim
