@@ -5,26 +5,26 @@ from functools import partial
 from lfm_norm import RMSNorm
 from lfm_rope import apply_rope
 from sdpa import SDPA
+from lfm_config import LFM2Config
 
 class GQAttention(nn.Module):
-    def __init__(self, d_model, heads, head_dim, 
-        nkv_groups, dtype=torch.float32):
+    def __init__(self, config: LFM2Config):
         super().__init__()
-        d_out = heads * head_dim
-        kv_d_out = nkv_groups * head_dim
+        d_out = config.heads * config.head_dim
+        kv_d_out = config.nkv_groups * config.head_dim
 
-        self.q_norm = RMSNorm(head_dim)
-        self.k_norm = RMSNorm(head_dim)
+        self.q_norm = RMSNorm(config.head_dim)
+        self.k_norm = RMSNorm(config.head_dim)
 
-        lin = partial(nn.Linear, bias=False, dtype=dtype)
-        self.Wq = lin(d_model, d_out)
-        self.Wk = lin(d_model, kv_d_out)
-        self.Wv = lin(d_model, kv_d_out) 
-        self.Wo = lin(d_out, d_model)
+        lin = partial(nn.Linear, bias=False, dtype=config.dtype)
+        self.Wq = lin(config.d_model, d_out)
+        self.Wk = lin(config.d_model, kv_d_out)
+        self.Wv = lin(config.d_model, kv_d_out) 
+        self.Wo = lin(d_out, config.d_model)
 
-        self.heads = heads
-        self.nkv_groups = nkv_groups
-        self.group_size = heads // nkv_groups
+        self.heads = config.heads
+        self.nkv_groups = config.nkv_groups
+        self.group_size = config.heads // config.nkv_groups
 
     def forward(self, x, cos, sin, mask=None):
         dtype = x.dtype
