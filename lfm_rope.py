@@ -20,7 +20,6 @@ def rotate_half(x):
 def apply_rope(q, k, cos, sin, dtype=torch.float32):
     cos = cos.unsqueeze(0).unsqueeze(0)
     sin = sin.unsqueeze(0).unsqueeze(0)
-    print(f"{q.shape = } {cos.shape = } {sin.shape = }")
     q_embed = (q * cos) + (rotate_half(q) * sin)
     k_embed = (k * cos) + (rotate_half(k) * sin)
     return q_embed.to(dtype), k_embed.to(dtype)
