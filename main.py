@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from lfm_tokenizer import Lfm2Tokenizer
 from lfm_norm import RMSNorm
 from lfm_rope import compute_rope
-from gqa import GQAttention
+from backbone import BackBone
 
 from lfm_config import LFM2Config
 
@@ -25,7 +25,10 @@ class LFM2350M(nn.Module):
             config.n_vocab, config.d_model, 
             padding_idx=0, dtype=config.dtype)
         self.norm = RMSNorm(config.d_model, False)
-        self.gqa = GQAttention(config)
+        attn_indeces = (2, 5, 8, 10, 12, 14)
+        self.backbones = nn.ModuleList([ 
+            BackBone(i in attn_indeces, config)
+            for i in range(16)])
         cos, sin = compute_rope(
             config.context_len, config.head_dim,
             config.theta_base, config.dtype
@@ -35,10 +38,11 @@ class LFM2350M(nn.Module):
     def forward(self, x):
         _, seq_len = x.shape
         x = self.embedding(x)
-        x = self.norm(x)
         cos = self.cos[:seq_len, :].to(x.device)
         sin = self.sin[:seq_len, :].to(x.device)
-        x = self.gqa(x, cos, sin)
+        for backbone in self.backbones:
+            x = self.norm(x)
+            x = backbone(x, cos, sin)
         return x
 
 model = LFM2350M(LFM2Config)
