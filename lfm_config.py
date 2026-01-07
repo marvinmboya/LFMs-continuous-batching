@@ -11,3 +11,4 @@ class LFM2Config:
     nkv_groups = 8
     theta_base = 1_000_000.0
     dtype = bfloat16
+    k_size = 3
