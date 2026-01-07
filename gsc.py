@@ -1,14 +1,16 @@
 import torch.nn as nn 
 from functools import partial 
+from lfm_config import LFM2Config
 
 class GatedShortBlock(nn.Module):
-    def __init__(self, 
-            d_model, k_size, groups, dtype
-        ):
+    def __init__(self, config: LFM2Config):
         super().__init__()
+        d_model = config.d_model
+        k_size = config.k_size
+        dtype = config.dtype
         self.conv = nn.Conv1d(
             d_model, d_model, k_size,
-            bias=False, groups=groups, padding=k_size-1,
+            bias=False, groups=d_model, padding=k_size-1,
             dtype=dtype
         )
         lin = partial(nn.Linear, bias=False, dtype=dtype)
