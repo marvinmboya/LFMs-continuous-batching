@@ -4,16 +4,16 @@ import torch.nn.functional as F
 
 from lfm_tokenizer import Lfm2Tokenizer
 from lfm_norm import RMSNorm
-from lfm_rope import compute_rope
 from backbone import BackBone
-
+from lfm_rope import compute_rope
+from lfm_decode import decode_next_token
 
 from lfm_config import LFM2Config
 
 prompt = "The ruler of a kingdom is a"
 tokenizer = Lfm2Tokenizer("tokenizer.json")
 encoded_prompt = tokenizer.encode(prompt)
-encoded_prompt = torch.tensor(
+encoded_prompt_d = torch.tensor(
     encoded_prompt,
     device = "cpu", # for now
 ).unsqueeze(0) # create batch dim
@@ -54,6 +54,9 @@ class LFM2350M(nn.Module):
         return x
 
 model = LFM2350M(LFM2Config)
-model.to(device)
-out = model(encoded_prompt)
-print(out.shape)
+model.to(device).eval()
+with torch.no_grad():
+    decode_next_token(
+        model, tokenizer, encoded_prompt_d, 
+        tokenizer.eos_token_id, temperature=0.3
+    )
