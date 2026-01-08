@@ -6,6 +6,7 @@ class LFM2Config:
     n_vocab = 65_536
     context_len = 32_000
     d_model = 1_024
+    d_hidden = 4_608
     heads = 16
     head_dim = 64
     nkv_groups = 8
