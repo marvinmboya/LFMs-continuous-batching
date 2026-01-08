@@ -7,6 +7,7 @@ from lfm_norm import RMSNorm
 from lfm_rope import compute_rope
 from backbone import BackBone
 
+
 from lfm_config import LFM2Config
 
 prompt = "The ruler of a kingdom is a"
@@ -28,7 +29,13 @@ class LFM2350M(nn.Module):
         attn_indeces = (2, 5, 8, 10, 12, 14)
         self.backbones = nn.ModuleList([ 
             BackBone(i in attn_indeces, config)
-            for i in range(16)])
+            for i in range(16)
+        ])
+        self.norm2 = RMSNorm(config.d_model, dtype=config.dtype)
+        self.lin_out = nn.Linear(
+            config.d_model, config.n_vocab, dtype=config.dtype
+        )
+
         cos, sin = compute_rope(
             config.context_len, config.head_dim,
             config.theta_base, config.dtype
@@ -41,8 +48,9 @@ class LFM2350M(nn.Module):
         cos = self.cos[:seq_len, :].to(x.device)
         sin = self.sin[:seq_len, :].to(x.device)
         for backbone in self.backbones:
-            x = self.norm(x)
             x = backbone(x, cos, sin)
+        x = self.norm2(x)
+        x = self.lin_out(x)
         return x
 
 model = LFM2350M(LFM2Config)
