@@ -2,22 +2,34 @@ import torch.nn as nn
 from lfm_config import LFM2Config
 from gqa import GQAttention
 from gsc import GatedShortBlock
+from lfm_norm import RMSNorm
+from feedforward import FeedForward
 
 class BackBone(nn.Module):
     def __init__(self, 
-                is_attn_on_conv_off, 
-                config: LFM2Config):
+        is_attn_on_conv_off, config: LFM2Config):
         super().__init__()
-        if is_attn_on_conv_off:
-            self.core = GQAttention(config)
-        else:
-            self.core = GatedShortBlock(config)
+        d_model, d_hidden = config.d_model, config.d_hidden
+        dtype = config.dtype
+
+        self.norm1 = RMSNorm(d_model, dtype=dtype)
+        self.core = GQAttention(config) if is_attn_on_conv_off else GatedShortBlock(config)
+        self.norm2 = RMSNorm(d_model, dtype=dtype)
+        self.ff = FeedForward(d_model, d_hidden, dtype)
+
         self.is_attn_on_conv_off = is_attn_on_conv_off
 
     def forward(self,x, cos, sin):
+        shortcut = x
+        x = self.norm1(x)
         if self.is_attn_on_conv_off:
             x = self.core(x, cos, sin)
         else:
             x = self.core(x)
+        x += shortcut 
+        shortcut = x 
+        x = self.ff(x)
+        x += x + shortcut 
         return x
+    
 
