@@ -25,13 +25,12 @@ class LFM2350M(nn.Module):
         self.embedding = nn.Embedding(
             config.n_vocab, config.d_model, 
             padding_idx=0, dtype=config.dtype)
-        self.norm = RMSNorm(config.d_model, False)
         attn_indeces = (2, 5, 8, 10, 12, 14)
         self.backbones = nn.ModuleList([ 
             BackBone(i in attn_indeces, config)
             for i in range(16)
         ])
-        self.norm2 = RMSNorm(config.d_model, dtype=config.dtype)
+        self.norm_out = RMSNorm(config.d_model, dtype=config.dtype)
         self.lin_out = nn.Linear(
             config.d_model, config.n_vocab, dtype=config.dtype
         )
@@ -49,7 +48,7 @@ class LFM2350M(nn.Module):
         sin = self.sin[:seq_len, :].to(x.device)
         for backbone in self.backbones:
             x = backbone(x, cos, sin)
-        x = self.norm2(x)
+        x = self.norm_out(x)
         x = self.lin_out(x)
         return x
 
