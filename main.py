@@ -35,5 +35,5 @@ model.to(device).eval()
 with torch.no_grad():
     decode_next_token(
         model, tokenizer, encoded_prompt_d, 
-        tokenizer.eos_token_id, temperature=0.3
+        tokenizer.eos_token_id, temperature=0.3, max_tokens=100
     )
