@@ -27,7 +27,7 @@ class GQAttention(nn.Module):
         self.nkv_groups = config.nkv_groups
         self.group_size = config.heads // config.nkv_groups
 
-    def forward(self, x, cos, sin, mask=None):
+    def forward(self, x, cos, sin, l_idx, hybrid_cache, mask=None):
         dtype = x.dtype
         q, k, v = (
             self.Wq(x),
@@ -44,6 +44,7 @@ class GQAttention(nn.Module):
         )
         q, k = self.q_norm(q), self.k_norm(k)
         q, k = apply_rope(q, k, cos, sin, dtype=dtype)
+        k, v = hybrid_cache.update(k, v, l_idx)
         k, v = (
             k.repeat_interleave(self.group_size, dim=1),
             v.repeat_interleave(self.group_size, dim=1)
