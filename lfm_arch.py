@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn 
 
 from lfm_norm import RMSNorm
@@ -27,13 +28,22 @@ class LFM2350M(nn.Module):
         )
         self.register_buffer("cos", cos, persistent=False)
         self.register_buffer("sin", sin, persistent=False)
-    def forward(self, x):
-        _, seq_len = x.shape
+    def forward(self, x, hybrid_cache):
+        seq_len = x.size(1)
+        device = x.device
+        _start = hybrid_cache.get_seq_length()
+        _end = _start + seq_len
+        cache_pos_ids = torch.arange(
+            _start, _start + seq_len, device=device
+        )
         x = self.embedding(x)
-        cos = self.cos[:seq_len, :].to(x.device)
-        sin = self.sin[:seq_len, :].to(x.device)
-        for backbone in self.backbones:
-            x = backbone(x, cos, sin)
+        cos = self.cos[_start:_end, :].to(x.device)
+        sin = self.sin[_start:_end, :].to(x.device)
+        for l_idx, backbone in enumerate(self.backbones):
+            x = backbone(
+                x, cos, sin, l_idx,
+                hybrid_cache, cache_pos_ids,
+        )
         x = self.norm_out(x)
         x = self.lin_out(x)
         return x

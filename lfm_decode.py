@@ -16,11 +16,11 @@ def sample_next_token(logits, top_k=None, temperature=1.0):
 
 colorprint = lambda x: print(f"\n\x1B[0;33m[{x} tokens/second]\x1B[0m")
 def decode_next_token(
-        model, tokenizer, init_tokens, eos_token_id, 
-        top_k=None, temperature=1.0, max_tokens=10,
-    ):
+        model, tokenizer, init_tokens, hybrid_cache, 
+        eos_token_id, top_k=None, temperature=1.0, 
+        max_tokens=10):
     token_ids = init_tokens
-    logits = model(init_tokens)[:, -1]
+    logits = model(init_tokens, hybrid_cache)[:, -1]
 
     avg_seconds_per_token = 0.0
     cum_avgs = []
@@ -36,7 +36,7 @@ def decode_next_token(
         next_token = tokenizer.decode(_next_token_id)
         print(next_token, flush=True, end="")
         token_ids = torch.cat((token_ids, next_token_id), dim=1)
-        logits = model(token_ids)[:, -1]
+        logits = model(token_ids, hybrid_cache)[:, -1]
         end = time.perf_counter()
         avg_seconds_per_token = (1/(index + 1)) * (
             (index * avg_seconds_per_token) + (end - start)

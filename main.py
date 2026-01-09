@@ -1,4 +1,5 @@
 import torch
+from lfm_cache import HybridCache
 
 from lfm_tokenizer import Lfm2Tokenizer
 from lfm_decode import decode_next_token
@@ -32,8 +33,11 @@ transferLFMWeights(model, pretrained_state_dict)
 del pretrained_state_dict
 
 model.to(device).eval()
+from lfm_cache import HybridCache
+batch_size = 1
+hybrid_cache = HybridCache(LFM2Config, batch_size, LFM2Config.dtype, device)
 with torch.no_grad():
     decode_next_token(
-        model, tokenizer, encoded_prompt_d, 
+        model, tokenizer, encoded_prompt_d, hybrid_cache,
         tokenizer.eos_token_id, temperature=0.3, max_tokens=100
     )
