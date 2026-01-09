@@ -1,14 +1,9 @@
 import torch
-import torch, torch.nn as nn
-import torch.nn.functional as F
 
 from lfm_tokenizer import Lfm2Tokenizer
-from lfm_norm import RMSNorm
-from backbone import BackBone
-from lfm_rope import compute_rope
 from lfm_decode import decode_next_token
-
 from lfm_config import LFM2Config
+from lfm_arch import LFM2350M
 
 prompt = "The ruler of a kingdom is a"
 tokenizer = Lfm2Tokenizer("tokenizer.json")
@@ -19,40 +14,23 @@ encoded_prompt_d = torch.tensor(
 ).unsqueeze(0) # create batch dim
 device="cpu"
 
-class LFM2350M(nn.Module):
-    def __init__(self, config: LFM2Config):
-        super().__init__()
-        self.embedding = nn.Embedding(
-            config.n_vocab, config.d_model, 
-            padding_idx=0, dtype=config.dtype)
-        attn_indeces = (2, 5, 8, 10, 12, 14)
-        self.backbones = nn.ModuleList([ 
-            BackBone(i in attn_indeces, config)
-            for i in range(16)
-        ])
-        self.norm_out = RMSNorm(config.d_model, dtype=config.dtype)
-        self.lin_out = nn.Linear(
-            config.d_model, config.n_vocab, dtype=config.dtype
-        )
-
-        cos, sin = compute_rope(
-            config.context_len, config.head_dim,
-            config.theta_base, config.dtype
-        )
-        self.register_buffer("cos", cos, persistent=False)
-        self.register_buffer("sin", sin, persistent=False)
-    def forward(self, x):
-        _, seq_len = x.shape
-        x = self.embedding(x)
-        cos = self.cos[:seq_len, :].to(x.device)
-        sin = self.sin[:seq_len, :].to(x.device)
-        for backbone in self.backbones:
-            x = backbone(x, cos, sin)
-        x = self.norm_out(x)
-        x = self.lin_out(x)
-        return x
-
 model = LFM2350M(LFM2Config)
+
+from huggingface_hub import hf_hub_download
+from safetensors.torch import load_file
+from lfm_weight import transferLFMWeights
+
+hf_hub_download(
+    repo_id = "LiquidAI/LFM2-350M",
+    local_dir = "./",
+    filename = "model.safetensors",
+    revision="3dbef32"
+)
+
+pretrained_state_dict = load_file("model.safetensors")
+transferLFMWeights(model, pretrained_state_dict)
+del pretrained_state_dict
+
 model.to(device).eval()
 with torch.no_grad():
     decode_next_token(
