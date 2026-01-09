@@ -28,8 +28,9 @@ class BackBone(nn.Module):
             x = self.core(x)
         x += shortcut 
         shortcut = x 
+        x = self.norm2(x)
         x = self.ff(x)
-        x += x + shortcut 
+        x += shortcut 
         return x
     
 
