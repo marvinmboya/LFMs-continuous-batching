@@ -34,7 +34,7 @@ class LFM2350M(nn.Module):
         _start = hybrid_cache.get_seq_length()
         _end = _start + seq_len
         cache_pos_ids = torch.arange(
-            _start, _start + seq_len, device=device
+            _start, _end, device=device
         )
         x = self.embedding(x)
         cos = self.cos[_start:_end, :].to(x.device)
