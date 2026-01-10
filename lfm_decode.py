@@ -36,7 +36,7 @@ def decode_next_token(
         next_token = tokenizer.decode(_next_token_id)
         print(next_token, flush=True, end="")
         token_ids = torch.cat((token_ids, next_token_id), dim=1)
-        logits = model(token_ids, hybrid_cache)[:, -1]
+        logits = model(next_token_id, hybrid_cache)[:, -1]
         end = time.perf_counter()
         avg_seconds_per_token = (1/(index + 1)) * (
             (index * avg_seconds_per_token) + (end - start)
