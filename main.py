@@ -40,11 +40,29 @@ pretrained_state_dict = load_file("model.safetensors")
 transferLFMWeights(model, pretrained_state_dict)
 del pretrained_state_dict
 
+responses = [""] * len(prompts)
+done = [False] * len(prompts)
+processing = set(range(batch_size))
+
 model.to(device).eval()
 from lfm_cache import HybridCache
 hybrid_cache = HybridCache(LFM2Config, batch_size, LFM2Config.dtype, device)
 with torch.no_grad():
-    decode_next_token(
-        model, tokenizer, encoded_prompts_d, hybrid_cache,
-        tokenizer.eos_token_id, temperature=0.3, max_tokens=100
-    )
+    for next_token_ids, avg_spt in decode_next_token(
+        model, encoded_prompts_d, hybrid_cache,
+        tokenizer.eos_token_id, temperature=0.3, max_tokens=100,
+        done=done):
+        for i, each_token in enumerate(next_token_ids):
+            if not done[i]:
+                responses[i] += tokenizer.decode([each_token])
+            if done[i] and i in processing:
+                processing.remove(i)
+                print(prompts[i])
+                print(responses[i])
+                print("*"*100)
+
+rem = processing.pop()
+print(prompts[rem])
+print(responses[rem])
+colorprint = lambda x: print(f"\n\x1B[0;33m[{x} tokens/second]\x1B[0m")
+colorprint(f"DECODE: {1/avg_spt:.1f}")
