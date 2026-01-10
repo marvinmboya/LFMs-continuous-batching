@@ -6,14 +6,22 @@ from lfm_decode import decode_next_token
 from lfm_config import LFM2Config
 from lfm_arch import LFM2350M
 
-prompt = "The ruler of a kingdom is a"
+prompts = ["What is 2 + 2^5?",
+           "What is the capital of Kenya?"]
+
 tokenizer = Lfm2Tokenizer("tokenizer.json")
-encoded_prompt = tokenizer.encode(prompt)
-encoded_prompt_d = torch.tensor(
-    encoded_prompt,
-    device = "cpu", # for now
-).unsqueeze(0) # create batch dim
-device="cpu"
+batch_size, device = len(prompts), "cpu"
+encode = lambda x: tokenizer.encode(x)
+inputs = [encode(prompt) for prompt in prompts]
+seq_len = max(len(_in) for _in in inputs)
+
+encoded_prompts_d = torch.empty(batch_size, seq_len, 
+            dtype=torch.int64, device=device).\
+            fill_(tokenizer.eos_token_id)
+
+for i, in_ in enumerate(inputs):
+    sz = len(in_); st = seq_len - sz
+    encoded_prompts_d[i, st:st + sz] = torch.tensor(in_)
 
 model = LFM2350M(LFM2Config)
 
@@ -34,10 +42,9 @@ del pretrained_state_dict
 
 model.to(device).eval()
 from lfm_cache import HybridCache
-batch_size = 1
 hybrid_cache = HybridCache(LFM2Config, batch_size, LFM2Config.dtype, device)
 with torch.no_grad():
     decode_next_token(
-        model, tokenizer, encoded_prompt_d, hybrid_cache,
+        model, tokenizer, encoded_prompts_d, hybrid_cache,
         tokenizer.eos_token_id, temperature=0.3, max_tokens=100
     )
