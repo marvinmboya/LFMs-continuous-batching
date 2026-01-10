@@ -6,6 +6,9 @@ from lfm_decode import decode_next_token
 from lfm_config import LFM2Config
 from lfm_arch import LFM2350M
 
+in_print = lambda x: print(f"\x1B[0;32m{x}\x1B[0m")
+out_print = lambda x: print(f"\x1B[38;5;216;1m{x}\x1B[0m")
+
 prompts = ["What is 2 + 2^5?",
            "What is the capital of Kenya?"]
 
@@ -57,12 +60,12 @@ with torch.no_grad():
                 responses[i] += tokenizer.decode([each_token])
             if done[i] and i in processing:
                 processing.remove(i)
-                print(prompts[i])
-                print(responses[i])
+                in_print(prompts[i])
+                out_print(responses[i])
                 print("*"*100)
 
 rem = processing.pop()
-print(prompts[rem])
-print(responses[rem])
+in_print(prompts[rem])
+out_print(responses[rem])
 colorprint = lambda x: print(f"\n\x1B[0;33m[{x} tokens/second]\x1B[0m")
 colorprint(f"DECODE: {1/avg_spt:.1f}")
