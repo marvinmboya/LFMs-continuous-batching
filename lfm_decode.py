@@ -14,11 +14,10 @@ def sample_next_token(logits, top_k=None, temperature=1.0):
         next_token_id = torch.argmax(logits, dim=-1, keepdim=True)
     return next_token_id
 
-colorprint = lambda x: print(f"\n\x1B[0;33m[{x} tokens/second]\x1B[0m")
 def decode_next_token(
-        model, tokenizer, init_tokens, hybrid_cache, 
+        model, init_tokens, hybrid_cache, 
         eos_token_id, top_k=None, temperature=1.0, 
-        max_tokens=10):
+        max_tokens=10, done=None):
     token_ids = init_tokens
     logits = model(init_tokens, hybrid_cache)[:, -1]
 
@@ -28,19 +27,22 @@ def decode_next_token(
         next_token_id = sample_next_token(
             logits, top_k, temperature
         )
+        for i, each_token in enumerate(next_token_id):
+            if each_token == eos_token_id:
+                done[i] = True
+            if done[i]:
+                next_token_id[i] = eos_token_id
         start = time.perf_counter()
         if (eos_token_id is not None and 
             torch.all(next_token_id == eos_token_id)):
             break
         _next_token_id = next_token_id.flatten().tolist()
-        next_token = tokenizer.decode(_next_token_id)
-        print(next_token, flush=True, end="")
         token_ids = torch.cat((token_ids, next_token_id), dim=1)
         logits = model(next_token_id, hybrid_cache)[:, -1]
         end = time.perf_counter()
         avg_seconds_per_token = (1/(index + 1)) * (
             (index * avg_seconds_per_token) + (end - start)
         )
-        cum_avgs.append(avg_seconds_per_token)
-    colorprint(f"DECODE: {1/avg_seconds_per_token:.1f}")
-    torch.save(torch.tensor(cum_avgs), "avgs_seconds_per_token.pt")
+        yield _next_token_id, avg_seconds_per_token
+    
+    
