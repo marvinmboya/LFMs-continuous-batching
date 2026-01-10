@@ -9,11 +9,17 @@ from lfm_arch import LFM2350M
 in_print = lambda x: print(f"\x1B[0;32m{x}\x1B[0m")
 out_print = lambda x: print(f"\x1B[38;5;216;1m{x}\x1B[0m")
 
-prompts = ["What is 2 + 2^5?",
-           "What is the capital of Kenya?"]
+all_prompts = ["What is 2 + 2^5?",
+           "What is the capital of Kenya?",
+           "In brief, what's the best language for parallel computing?",
+           "What's hello in Spanish?"]
+
+batch_size = 2
+batch_size = min(batch_size, len(all_prompts))
+prompts = all_prompts[:batch_size]
 
 tokenizer = Lfm2Tokenizer("tokenizer.json")
-batch_size, device = len(prompts), "cpu"
+device = "cpu"
 encode = lambda x: tokenizer.encode(x)
 inputs = [encode(prompt) for prompt in prompts]
 seq_len = max(len(_in) for _in in inputs)
@@ -53,7 +59,7 @@ hybrid_cache = HybridCache(LFM2Config, batch_size, LFM2Config.dtype, device)
 with torch.no_grad():
     for next_token_ids, avg_spt in decode_next_token(
         model, encoded_prompts_d, hybrid_cache,
-        tokenizer.eos_token_id, temperature=0.3, max_tokens=100,
+        tokenizer.eos_token_id, temperature=0.3, max_tokens=1000,
         done=done):
         for i, each_token in enumerate(next_token_ids):
             if not done[i]:
