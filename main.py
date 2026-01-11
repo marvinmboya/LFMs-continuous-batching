@@ -23,7 +23,6 @@ tokenizer = Lfm2Tokenizer("tokenizer.json")
 device = "cpu"
 encode = lambda x: tokenizer.encode(x)
 inputs = [encode(prompt) for prompt in prompts]
-other_token_ids = [encode(prompt) for prompt in other_prompts]
 seq_len = max(len(_in) for _in in inputs)
 
 encoded_prompts_d = torch.empty(batch_size, seq_len, 
@@ -59,12 +58,18 @@ model.to(device).eval()
 from lfm_cache import HybridCache
 hybrid_cache = HybridCache(LFM2Config, batch_size, LFM2Config.dtype, device)
 with torch.no_grad():
-    for next_token_ids, avg_spt in decode_next_token(
-        model, encoded_prompts_d, other_token_ids, hybrid_cache,
+    for next_token_ids, prompt_meta, avg_spt in decode_next_token(
+        model, encoded_prompts_d, other_prompts, tokenizer, hybrid_cache,
         tokenizer.eos_token_id, temperature=0.3, max_tokens=1000,
         done=done):
         for i, each_token in enumerate(next_token_ids):
-            if not done[i]:
+            if prompt_meta[1] and i == prompt_meta[0]:
+                in_print(prompts[i])
+                out_print(responses[i])
+                print("*"*100)
+                prompts[i] = prompt_meta[2]
+                responses[i] = tokenizer.decode([each_token])
+            elif not done[i]:
                 responses[i] += tokenizer.decode([each_token])
             if done[i] and i in processing:
                 processing.remove(i)
