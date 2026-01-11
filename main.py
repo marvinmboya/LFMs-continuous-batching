@@ -17,11 +17,13 @@ all_prompts = ["What is 2 + 2^5?",
 batch_size = 2
 batch_size = min(batch_size, len(all_prompts))
 prompts = all_prompts[:batch_size]
+other_prompts = all_prompts[batch_size:]
 
 tokenizer = Lfm2Tokenizer("tokenizer.json")
 device = "cpu"
 encode = lambda x: tokenizer.encode(x)
 inputs = [encode(prompt) for prompt in prompts]
+other_token_ids = [encode(prompt) for prompt in other_prompts]
 seq_len = max(len(_in) for _in in inputs)
 
 encoded_prompts_d = torch.empty(batch_size, seq_len, 
@@ -58,7 +60,7 @@ from lfm_cache import HybridCache
 hybrid_cache = HybridCache(LFM2Config, batch_size, LFM2Config.dtype, device)
 with torch.no_grad():
     for next_token_ids, avg_spt in decode_next_token(
-        model, encoded_prompts_d, hybrid_cache,
+        model, encoded_prompts_d, other_token_ids, hybrid_cache,
         tokenizer.eos_token_id, temperature=0.3, max_tokens=1000,
         done=done):
         for i, each_token in enumerate(next_token_ids):
