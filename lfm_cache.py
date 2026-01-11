@@ -6,7 +6,8 @@ class HybridCache:
                 batch, dtype=torch.float32, device=None
         ):
         self.k_cache, self.v_cache = [], []
-
+        self.is_inter = False 
+        self.inter_batch = 0
         self.conv_cache: list[torch.Tensor] = []
         for _ in range(16):
             conv_state = torch.zeros(
