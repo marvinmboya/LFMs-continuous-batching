@@ -15,14 +15,13 @@ def sample_next_token(logits, top_k=None, temperature=1.0):
     return next_token_id
 
 def decode_next_token(
-        model, init_tokens, hybrid_cache, 
-        eos_token_id, top_k=None, temperature=1.0, 
-        max_tokens=10, done=None):
+    model, init_tokens, other_prompts, tokenizer, hybrid_cache, 
+    eos_token_id, top_k=None, temperature=1.0, max_tokens=10, done=None):
     token_ids = init_tokens
     logits = model(init_tokens, hybrid_cache)[:, -1]
 
     avg_seconds_per_token = 0.0
-    cum_avgs = []
+    seq_len = init_tokens.size(1)
     for index in range(max_tokens):
         next_token_id = sample_next_token(
             logits, top_k, temperature
@@ -30,6 +29,26 @@ def decode_next_token(
         for i, each_token in enumerate(next_token_id):
             if each_token == eos_token_id:
                 done[i] = True
+                if other_prompts:
+                    new_prompt = other_prompts.pop(0)
+                    new_token_id = tokenizer.encode(new_prompt)
+                    new_batch_id = torch.empty(
+                        1, seq_len + index, dtype=torch.int64,
+                        device = init_tokens.device
+                    ).fill_(eos_token_id)
+                    sz = len(new_token_id)
+                    st = (seq_len + index) - sz
+                    new_token_id = torch.tensor(new_token_id)
+                    new_batch_id[0, st:st + sz] = new_token_id
+                    hybrid_cache.is_inter = True
+                    hybrid_cache.inter_batch = i
+                    logits = model(new_batch_id, hybrid_cache)[:, -1]
+                    hybrid_cache.is_inter = False 
+                    hybrid_cache.inter_batch = 0
+                    new_prefill_id = sample_next_token(logits, top_k, temperature)
+                    next_token_id[i, 0] = new_prefill_id.item()
+                    done[i] = False
+                    ##########
             if done[i]:
                 next_token_id[i] = eos_token_id
         start = time.perf_counter()
