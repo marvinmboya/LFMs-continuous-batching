@@ -23,6 +23,7 @@ def decode_next_token(
     avg_seconds_per_token = 0.0
     seq_len = init_tokens.size(1)
     for index in range(max_tokens):
+        prompt_meta = (0, False, "")
         next_token_id = sample_next_token(
             logits, top_k, temperature
         )
@@ -31,6 +32,7 @@ def decode_next_token(
                 done[i] = True
                 if other_prompts:
                     new_prompt = other_prompts.pop(0)
+                    prompt_meta = (i, True, new_prompt)
                     new_token_id = tokenizer.encode(new_prompt)
                     new_batch_id = torch.empty(
                         1, seq_len + index, dtype=torch.int64,
@@ -62,6 +64,6 @@ def decode_next_token(
         avg_seconds_per_token = (1/(index + 1)) * (
             (index * avg_seconds_per_token) + (end - start)
         )
-        yield _next_token_id, avg_seconds_per_token
+        yield _next_token_id, prompt_meta, avg_seconds_per_token
     
     
