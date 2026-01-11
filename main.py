@@ -11,7 +11,7 @@ out_print = lambda x: print(f"\x1B[38;5;216;1m{x}\x1B[0m")
 
 all_prompts = ["What is 2 + 2^5?",
            "What is the capital of Kenya?",
-           "In brief, what's the best language for parallel computing?",
+           "What's the best landmark in France?",
            "What's hello in Spanish?"]
 
 batch_size = 2
