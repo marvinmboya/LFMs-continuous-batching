@@ -31,7 +31,7 @@ class LFM2350M(nn.Module):
     def forward(self, x, hybrid_cache):
         seq_len = x.size(1)
         device = x.device
-        _start = hybrid_cache.get_seq_length()
+        _start = 0 if hybrid_cache.is_inter else hybrid_cache.get_seq_length()
         _end = _start + seq_len
         cache_pos_ids = torch.arange(
             _start, _end, device=device
