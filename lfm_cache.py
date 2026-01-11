@@ -19,6 +19,10 @@ class HybridCache:
             self.v_cache.append(torch.tensor([]))
 
     def update(self, k, v, l_idx):
+        if self.is_inter:
+            k, v = self.update_at_batch_i(k, v, l_idx)
+            return k.unsqueeze(0), v.unsqueeze(0)
+        
         if self.k_cache[l_idx].numel() == 0:
             self.k_cache[l_idx] = k
             self.v_cache[l_idx] = v
@@ -33,6 +37,13 @@ class HybridCache:
             return 0
         return self.k_cache[l_idx].shape[-2]
 
+    def update_at_batch_i(self, k, v, l_idx):
+        inter_batch = self.inter_batch
+        self.k_cache[l_idx][inter_batch, ...] = k
+        self.v_cache[l_idx][inter_batch, ...] = v
+        return (self.k_cache[l_idx][inter_batch,...], 
+                self.v_cache[l_idx][inter_batch,...])
+    
     def reset(self):
         for l_idx in range(len(self.conv_cache)):
             self.conv_cache[l_idx].zero_()
