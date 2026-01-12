@@ -43,7 +43,27 @@ class HybridCache:
         self.v_cache[l_idx][inter_batch, ...] = v
         return (self.k_cache[l_idx][inter_batch,...], 
                 self.v_cache[l_idx][inter_batch,...])
-    
+
+    def repack_kv_caches(self, breaks):
+        batches = len(breaks) - 1
+        max_seq_len = max([i-j for i, j in zip(breaks[1:], breaks)])
+
+        for i in range(16):
+            others = self.conv_cache[i].shape[1:]
+            dtype, device = self.conv_cache[i].dtype, self.conv_cache[i].device
+            self.conv_cache[i] =  torch.zeros(batches, *others, dtype=dtype, device=device)
+        for l_idx in (2, 5, 8, 10, 12, 14):
+            _, heads, _, head_dim = self.k_cache[l_idx].shape
+            k_cache = torch.zeros(batches, heads, max_seq_len, head_dim, dtype=dtype, device=device)
+            v_cache = torch.zeros(batches, heads, max_seq_len, head_dim, dtype=dtype, device=device)
+
+            for i in range(batches):
+                s, e = breaks[i], breaks[i + 1]
+                k_cache[i, :, s - e:, :] = self.k_cache[l_idx][:, :, s:e, :].contiguous()
+                v_cache[i, :, s - e:, :] = self.v_cache[l_idx][:, :, s:e, :].contiguous()
+            self.k_cache[l_idx] = k_cache
+            self.v_cache[l_idx] = v_cache
+            
     def reset(self):
         for l_idx in range(len(self.conv_cache)):
             self.conv_cache[l_idx].zero_()
