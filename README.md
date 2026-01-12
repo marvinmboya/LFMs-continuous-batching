@@ -1,5 +1,7 @@
 ## Continuous Batching & Dynamic Scheduling
-**By [Marvin Mboya](https://www.linkedin.com/in/marvin-mboya)** | _Featuring State-of-the-Art LFM2-350M_
+**By [Marvin Mboya](https://www.linkedin.com/in/marvin-mboya)** | _Featuring State-of-the-Art LFM2-350M_<br/>
+
+
 Large Language Models (LLMs) are large **autoregressive** models that, given a prompt, predict the next tokens (words or sub-words) until the end token. Through sequential stochastic decoding, a prompt response is generated.
 
 > **Definition:** _Autoregressive_ means previous time-step observations are used to predict the current time-step observation. In LLMs, as more tokens are predicted, they are continuously appended to the input to predict even more tokens.
