@@ -28,7 +28,7 @@ class LFM2350M(nn.Module):
         )
         self.register_buffer("cos", cos, persistent=False)
         self.register_buffer("sin", sin, persistent=False)
-    def forward(self, x, hybrid_cache):
+    def forward(self, x, mask, hybrid_cache):
         seq_len = x.size(1)
         device = x.device
         _start = 0 if hybrid_cache.is_inter else hybrid_cache.get_seq_length()
@@ -41,7 +41,7 @@ class LFM2350M(nn.Module):
         sin = self.sin[_start:_end, :].to(x.device)
         for l_idx, backbone in enumerate(self.backbones):
             x = backbone(
-                x, cos, sin, l_idx,
+                x, cos, sin, mask, l_idx,
                 hybrid_cache, cache_pos_ids,
         )
         x = self.norm_out(x)

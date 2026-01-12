@@ -20,12 +20,12 @@ class BackBone(nn.Module):
         self.is_attn_on_conv_off = is_attn_on_conv_off
 
     def forward(
-            self, x, cos, sin, l_idx,
+            self, x, cos, sin, mask, l_idx,
             hybrid_cache, cache_pos_ids):
         shortcut = x
         x = self.norm1(x)
         if self.is_attn_on_conv_off:
-            x = self.core(x, cos, sin, l_idx, hybrid_cache)
+            x = self.core(x, cos, sin, l_idx, hybrid_cache, mask)
         else:
             x = self.core(x, l_idx, hybrid_cache, cache_pos_ids)
         x += shortcut 
