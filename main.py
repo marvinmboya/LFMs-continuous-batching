@@ -22,16 +22,22 @@ other_prompts = all_prompts[batch_size:]
 tokenizer = Lfm2Tokenizer("tokenizer.json")
 device = "cpu"
 encode = lambda x: tokenizer.encode(x)
-inputs = [encode(prompt) for prompt in prompts]
-seq_len = max(len(_in) for _in in inputs)
 
-encoded_prompts_d = torch.empty(batch_size, seq_len, 
-            dtype=torch.int64, device=device).\
-            fill_(tokenizer.eos_token_id)
+encoded_prompts = []
+prompt_breaks = [0]
+for prompt in prompts:
+    tokens = tokenizer.encode(prompt)
+    encoded_prompts.extend(tokens)
+    prompt_breaks.append(prompt_breaks[-1] + len(tokens))
+encoded_prompts_d = torch.tensor(encoded_prompts, device=device).unsqueeze(0)
 
-for i, in_ in enumerate(inputs):
-    sz = len(in_); st = seq_len - sz
-    encoded_prompts_d[i, st:st + sz] = torch.tensor(in_)
+t_sz = encoded_prompts_d.numel()
+ragged_mask = torch.ones((t_sz, t_sz), device=device)
+for i in range(len(prompt_breaks)-1):
+     s, e = prompt_breaks[i], prompt_breaks[i+1]
+     block = torch.triu(torch.ones(e-s,e-s, dtype=torch.bool), diagonal=1)
+     ragged_mask[s:e,s:e] = block
+ragged_mask = ragged_mask.bool()
 
 model = LFM2350M(LFM2Config)
 
