@@ -65,9 +65,8 @@ from lfm_cache import HybridCache
 hybrid_cache = HybridCache(LFM2Config, batch_size, LFM2Config.dtype, device)
 with torch.no_grad():
     for next_token_ids, prompt_meta, avg_spt in decode_next_token(
-        model, encoded_prompts_d, other_prompts, tokenizer, hybrid_cache,
-        tokenizer.eos_token_id, temperature=0.3, max_tokens=1000,
-        done=done):
+        model, ragged_mask, prompt_breaks, encoded_prompts_d, other_prompts, tokenizer, hybrid_cache,
+        tokenizer.eos_token_id, temperature=0.3, max_tokens=1000, done=done):
         for i, each_token in enumerate(next_token_ids):
             if prompt_meta[1] and i == prompt_meta[0]:
                 in_print(prompts[i])
