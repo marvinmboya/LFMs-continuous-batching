@@ -5,7 +5,9 @@ from lfm_decode import decode_next_token
 from lfm_config import LFM2Config
 from lfm_arch import LFM2350M
 
-prompt = "The ruler of a kingdom is a"
+torch.manual_seed(42)
+
+prompt = "Hello world!"
 tokenizer = Lfm2Tokenizer("tokenizer.json")
 encoded_prompt = tokenizer.encode(prompt)
 encoded_prompt_d = torch.tensor(
@@ -19,6 +21,7 @@ model = LFM2350M(LFM2Config)
 from huggingface_hub import hf_hub_download
 from safetensors.torch import load_file
 from lfm_weight import transferLFMWeights
+from lfm_to_bin import saveLFMWeightsToBin
 
 hf_hub_download(
     repo_id = "LiquidAI/LFM2-350M",
@@ -31,7 +34,14 @@ pretrained_state_dict = load_file("model.safetensors")
 transferLFMWeights(model, pretrained_state_dict)
 del pretrained_state_dict
 
+saveLFMWeightsToBin(model)
 model.to(device).eval()
+import time 
+st = time.perf_counter()
+model(encoded_prompt_d)
+en = time.perf_counter()
+print(f"time elapsed: {en - st} seconds")
+import sys; sys.exit(0)
 with torch.no_grad():
     decode_next_token(
         model, tokenizer, encoded_prompt_d, 
