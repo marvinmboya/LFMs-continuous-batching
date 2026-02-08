@@ -1,11 +1,17 @@
 import torch
+from pathlib import Path
+import argparse
 
 from lfm_tokenizer import Lfm2Tokenizer
 from lfm_decode import decode_next_token
 from lfm_config import LFM2Config
 from lfm_arch import LFM2350M
 
-prompt = "The ruler of a kingdom is a"
+parser = argparse.ArgumentParser()
+parser.add_argument('-p', '--prompt', type=str, default="What is hello in spanish?")
+args = parser.parse_args()
+
+prompt = args.prompt
 tokenizer = Lfm2Tokenizer("tokenizer.json")
 encoded_prompt = tokenizer.encode(prompt)
 encoded_prompt_d = torch.tensor(
@@ -20,12 +26,13 @@ from huggingface_hub import hf_hub_download
 from safetensors.torch import load_file
 from lfm_weight import transferLFMWeights
 
-hf_hub_download(
-    repo_id = "LiquidAI/LFM2-350M",
-    local_dir = "./",
-    filename = "model.safetensors",
-    revision="3dbef32"
-)
+if not Path("./model.safetensors").exists():
+    hf_hub_download(
+        repo_id = "LiquidAI/LFM2-350M",
+        local_dir = "./",
+        filename = "model.safetensors",
+        revision="3dbef32"
+    )
 
 pretrained_state_dict = load_file("model.safetensors")
 transferLFMWeights(model, pretrained_state_dict)
