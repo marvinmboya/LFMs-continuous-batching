@@ -1,20 +1,8 @@
 import json
 import struct
 
-def bytes_to_unicode():
-    bs = list(range(33, 127)) + list(range(161, 173)) + list(range(174, 256))
-    cs = bs[:]
-    n = 0
-    for b in range(256):
-        if b not in bs:
-            bs.append(b)
-            cs.append(256 + n)
-            n += 1
-    return dict(zip(bs, map(chr, cs)))
-
-def save_tokenizer_binary(json_path, output_path):
+def saveLFMTokenizerToBin(json_path, output_path):
     """Save tokenizer to compact binary format"""
-    
     with open(json_path, "r", encoding="utf-8") as f:
         tok = json.load(f)
     
@@ -44,7 +32,3 @@ def save_tokenizer_binary(json_path, output_path):
             f.write(b1)
             f.write(struct.pack("<H", len(b2)))
             f.write(b2)
-
-# Usage
-save_tokenizer_binary("tokenizer.json", "tokenizer.bin")
-print("Tokenizer saved to tokenizer.bin")
