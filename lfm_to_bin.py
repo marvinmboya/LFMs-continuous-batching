@@ -12,7 +12,7 @@ def store_to_file(in_: torch.Tensor, _name: str):
         in_ = in_.float()
     assert in_.dtype == torch.float32, f"Expected float32, got {in_.dtype}"
     in_ = in_.cpu().flatten()
-    _name = f"./fp32_bins/{_name}"
+    _name = f"files/fp32_bins/{_name}"
     in_.numpy().tofile(_name)
 
 def saveLFMWeightsToBin(model):
