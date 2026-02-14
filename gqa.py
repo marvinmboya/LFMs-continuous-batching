@@ -49,7 +49,7 @@ class GQAttention(nn.Module):
             k.repeat_interleave(self.group_size, dim=1),
             v.repeat_interleave(self.group_size, dim=1)
         )
-        out = SDPA(q, k, v, mask, dtype=dtype)
+        out = nn.functional.scaled_dot_product_attention(q, k, v)
         out = out.transpose(1, 2)
         out = out.contiguous().view(*out.shape[:2], -1)
         out = self.Wo(out)
