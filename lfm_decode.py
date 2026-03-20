@@ -34,7 +34,7 @@ def decode_next_token(
             break
         _next_token_id = next_token_id.flatten().tolist()
         next_token = tokenizer.decode(_next_token_id)
-        print(next_token, flush=True, end="")
+        print(f"\x1B[38;5;216;1m{next_token}\x1B[0m", flush=True, end="")
         token_ids = torch.cat((token_ids, next_token_id), dim=1)
         logits = model(next_token_id, hybrid_cache)[:, -1]
         end = time.perf_counter()
@@ -43,4 +43,4 @@ def decode_next_token(
         )
         cum_avgs.append(avg_seconds_per_token)
     colorprint(f"DECODE: {1/avg_seconds_per_token:.1f}")
-    torch.save(torch.tensor(cum_avgs), "avgs_seconds_per_token.pt")
+    # torch.save(torch.tensor(cum_avgs), "avgs_seconds_per_token.pt")
