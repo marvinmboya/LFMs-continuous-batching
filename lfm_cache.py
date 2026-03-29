@@ -1,6 +1,16 @@
 import torch 
 from lfm_config import LFM2Config
 
+def divisorWeight(value):
+    i = 0
+    while value:
+        value = value >> 10
+        i += 1
+    return i - 1
+    
+def sizeStr(size, i):
+    return f"{size / 1024**i:.2f} {'MB' if i < 3 else 'GB'}"
+
 class HybridCache:
     def __init__(self, config: LFM2Config, 
                 batch, dtype=torch.float32, device=None
@@ -17,6 +27,15 @@ class HybridCache:
             self.conv_cache.append(conv_state)
             self.k_cache.append(torch.tensor([]))
             self.v_cache.append(torch.tensor([]))
+    
+    def get_kv_size(self, logger):
+        k_size = sum(k.nelement() * k.element_size() 
+                     for k in self.k_cache) 
+        v_size = sum(v.nelement() * v.element_size() 
+                     for v in self.v_cache)
+        k_size_str = sizeStr(k_size, divisorWeight(k_size))
+        v_size_str = sizeStr(v_size, divisorWeight(v_size))
+        logger.info(f"K: {k_size_str:.^10} V: {v_size_str:.^10}")
 
     def update(self, k, v, l_idx):
         if self.is_inter:
