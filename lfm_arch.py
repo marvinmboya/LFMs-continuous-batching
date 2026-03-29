@@ -6,6 +6,19 @@ from backbone import BackBone
 from lfm_rope import compute_rope
 from lfm_config import LFM2Config
 
+import logging
+
+def create_logger():
+    logger = logging.getLogger('kvlogger')
+    logger.setLevel(logging.INFO)
+
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler = logging.FileHandler('kvsize.log')
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    return logger
+
 class LFM2350M(nn.Module):
     def __init__(self, config: LFM2Config):
         super().__init__()
@@ -28,10 +41,17 @@ class LFM2350M(nn.Module):
         )
         self.register_buffer("cos", cos, persistent=False)
         self.register_buffer("sin", sin, persistent=False)
+        self.print_inc = 0
+        self.logger = create_logger()
+
     def forward(self, x, hybrid_cache):
         seq_len = x.size(1)
         device = x.device
         _start = 0 if hybrid_cache.is_inter else hybrid_cache.get_seq_length()
+        if _start >= self.print_inc:
+            self.logger.info(f"Seq Len: {_start}")
+            hybrid_cache.get_kv_size(self.logger)
+            self.print_inc += 100
         _end = _start + seq_len
         cache_pos_ids = torch.arange(
             _start, _end, device=device
